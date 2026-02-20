@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from app.db.deps import get_db
 from app.db.models.scan_job import ScanJob
 from app.schemas.scan import ScanCreate, ScanOut
+from app.workers.tasks.scan_tasks import run_scan
 
 router = APIRouter()
 
@@ -16,6 +17,9 @@ def create_scan(payload: ScanCreate, db: Session = Depends(get_db)):
     db.add(scan)
     db.commit()
     db.refresh(scan)
+    
+    run_scan.delay(scan.id)
+    
     return scan
 
 @router.get("/", response_model=list[ScanOut])
